@@ -521,6 +521,7 @@ border: 0px;</string>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
   <include location="mainwindow.qrc"/>
+  <include location="C:/Users/gafkS_000/.designer/backup/mainwindow.qrc"/>
  </resources>
  <connections/>
 </ui>

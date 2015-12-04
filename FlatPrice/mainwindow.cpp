@@ -5,8 +5,10 @@ MainWindow::MainWindow(QWidget *parent)
 {
 	ui.setupUi(this);
 	dataForAlglib = nullptr;
+	nnInfo = nullptr;
 	ui.nnstatus->setAttribute(Qt::WA_TranslucentBackground);
 	ui.nninfo->setVisible(false);
+	ui.estimationBox->setEnabled(false);
 
 	setConnections();
 }
@@ -19,10 +21,15 @@ MainWindow::~MainWindow()
 	{
 		delete dataForAlglib;
 	}
+	if (nnInfo != nullptr)
+	{
+		delete nnInfo;
+	}
 }
 
 void MainWindow::createAndTrainNeuralNetwork()
 {
+	resetData();
 	alglib::ae_int_t info;
 	alglib::mlpreport report;
 	QVector<QVector<QVariant>> data;
@@ -53,7 +60,6 @@ void MainWindow::createAndTrainNeuralNetwork()
 	alglib::mlpcreatetrainer(inputsNumber, outputsNumber, trainer);
 
 	/* Создаем нейронную сеть */
-	//alglib::mlpcreate1(inputsNumber, hiddenNeuronsNumber, outputsNumber, neuralNetwork);
 	alglib::mlpcreate0(inputsNumber, outputsNumber, neuralNetwork);
 
 	/* Устанавливаем данные для учителя */
@@ -61,12 +67,14 @@ void MainWindow::createAndTrainNeuralNetwork()
 
 	/* Устанавливаем параметры обучения */
 	double wstep = 0.000;					// Шаг изменения весов для остановки
+	double decay = 0.01;					// Коэффициент регуляризации
 	alglib::ae_int_t maxits = 100;			// Максимальное количество итераций для остановки
-	alglib::mlpsetdecay(trainer, 0.01);
+	alglib::ae_int_t restarts = 5;			// Количество повторов прогона обучающей выборки
+	alglib::mlpsetdecay(trainer, decay);
 	alglib::mlpsetcond(trainer, wstep, maxits);
 
 	/* Обучение нейронной сети */
-	alglib::mlptrainnetwork(trainer, neuralNetwork, 5, report);
+	alglib::mlptrainnetwork(trainer, neuralNetwork, restarts, report);
 
 	/* Кросс-валидация */
 	//alglib::mlpkfoldcv(trainer,neuralNetwork, 5, 10,report);
@@ -74,6 +82,12 @@ void MainWindow::createAndTrainNeuralNetwork()
 	ui.nnstatus->setText("Нейронная сеть успешно обучена на " + QString::number(trainingSetSize) + " примерах");
 	ui.nninfo->setVisible(true);
 	ui.estimationBox->setEnabled(true);
+
+	/* Создаем форму с информацией о сети */
+	nnInfo = new NNInfo(0,
+						excelFileData[0].size() - 1, outputsNumber,
+						inputsNumber, outputsNumber,
+						"L-BFGS", trainingSetSize, maxits, restarts, decay);
 }
 
 void MainWindow::estimatePrice()
@@ -109,25 +123,15 @@ void MainWindow::estimatePrice()
 	/* Рассчитываем стоимость */
 	alglib::mlpprocess(neuralNetwork, flatInfo, flatPrice);
 
+	/* Выводим результат */
 	QString price(flatPrice.tostring(1).c_str());
-
 	makeOutputString(price);
 	ui.price->setText(price);
 }
 
 void MainWindow::showNeuralNetworkInfo()
 {
-	for (int i = 0; i < hiddenNeuronsNumber; ++i)
-	{
-		try
-		{
-			qDebug() << alglib::mlpgetweight(neuralNetwork, 0, i, 1, i);
-		}
-		catch (...)
-		{
-			int a = 32;
-		}
-	}
+	nnInfo->show();
 }
 
 void MainWindow::setConnections()
@@ -135,6 +139,29 @@ void MainWindow::setConnections()
 	connect(ui.train, SIGNAL(clicked(bool)), this, SLOT(createAndTrainNeuralNetwork()));
 	connect(ui.nninfo, SIGNAL(clicked(bool)), this, SLOT(showNeuralNetworkInfo()));
 	connect(ui.estimate, SIGNAL(clicked(bool)), this, SLOT(estimatePrice ()));
+}
+
+void MainWindow::resetData()
+{
+	ui.nninfo->setVisible(false);
+	ui.estimationBox->setEnabled(false);
+	ui.nnstatus->setText("Нейронная сеть еще не обучена");
+	if (nnInfo != nullptr)
+	{
+		delete nnInfo;
+		nnInfo = nullptr;
+	}
+	if (dataForAlglib != nullptr)
+	{
+		delete dataForAlglib;
+		dataForAlglib = nullptr;
+	}
+	excelFileData.clear();
+	codedDistricts.clear();
+	inputsNumber = 0;
+	outputsNumber = 1;
+	trainingSetSize = 0;
+	hiddenNeuronsNumber = 3;
 }
 
 void MainWindow::makeDistrictsComboBox(QStringList districts)
@@ -167,23 +194,9 @@ void MainWindow::makeOutputString(QString &price)
 		int symbolsAfterDot = size - indexOfDot;
 		price.remove(indexOfDot, symbolsAfterDot);
 	}
-
-	/* Ставим разделители для наглядности */
-	int size = price.size();
-	int splitterIndex = 1;
-	if (size > DIGITS_IN_ONE_MILLION_NUMBER)
-	{
-		splitterIndex += (size - DIGITS_IN_ONE_MILLION_NUMBER);
-	}
-	
-	while (splitterIndex <= size)
-	{
-		price.insert(splitterIndex, ' ');
-		splitterIndex += DIGITS_TO_NEXT_SPLITTER;
-	}
-
-	price.append(' ');
-	price.append(QChar(UNICODE_NUMBER_OF_RUBLE));
+	/* Форматирование в соответствии с локализацией компьютера */
+	QLocale current = QLocale::system();
+	price = current.toCurrencyString(price.toFloat());
 }
 
 QVector<QVector<QVariant>> MainWindow::readExcelFile(QString& filename) throw(QString &)
