@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="MainWindow">
+    <file>Application Resources/buildings.png</file>
+    <file>Application Resources/нейтрон-865746.png</file>
+  </qresource>
+</RCC>
