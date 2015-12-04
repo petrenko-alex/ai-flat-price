@@ -19,6 +19,7 @@
 #define	 DIGITS_IN_ONE_MILLION_NUMBER 7
 #define  UNICODE_NUMBER_OF_RUBLE 8381
 #define  DIGITS_TO_NEXT_SPLITTER 4
+#define  MAX_VALUE_OF_CRITERION 99999
 
 /* Кодирование номинальных данных - районов ( пример для для файла "Volgograd New Flats.xls" )
 
@@ -74,6 +75,8 @@ private:
 
 	/* Представить номинальный данные(районы) по схеме "1-of-N" */
 	QMap<QString, QVector<float>> codeDistricts(QVector<QVector<QVariant>> &data);
+
+	void setLimitsToWidgits(QVector<QVector<QVariant>> &data);
 
 	/* Данные */
 	Ui::MainWindowClass ui;

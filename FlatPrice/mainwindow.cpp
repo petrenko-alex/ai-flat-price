@@ -52,7 +52,10 @@ void MainWindow::createAndTrainNeuralNetwork()
 		QMessageBox::critical(this, "Ошибка загрузки", "Вы не выбрали файл.");
 		return;
 	}
-	
+
+	/* Устанавливаем границы диапазонов виджетов по выборке */
+	setLimitsToWidgits(data);
+
 	/* Преобразуем считанные из файла данные в формат Alglib */
 	alglib::real_2d_array trainingData = prepareDataForNeuralNetwork(data);
 
@@ -364,3 +367,52 @@ QMap<QString, QVector<float>> MainWindow::codeDistricts(QVector<QVector<QVariant
 
 	return result;
 }
+
+void MainWindow::setLimitsToWidgits(QVector<QVector<QVariant>> &data)
+{
+	double minSquare = MAX_VALUE_OF_CRITERION,
+		   minRooms = MAX_VALUE_OF_CRITERION, 
+		   minFloor = MAX_VALUE_OF_CRITERION;
+
+	double maxSquare = 0,
+	       maxRooms = 0, 
+		   maxFloor = 0;
+
+	for (auto i : data)
+	{
+		if (i[1].toDouble() < minSquare)
+		{
+			minSquare = i[1].toDouble();
+		}
+
+		if (i[1].toDouble() > maxSquare)
+		{
+			maxSquare = i[1].toDouble();
+		}
+
+		if (i[2].toDouble() < minRooms)
+		{
+			minRooms = i[2].toDouble();
+		}
+
+		if (i[2].toDouble() > maxRooms)
+		{
+			maxRooms = i[2].toDouble();
+		}
+
+		if (i[3].toDouble() < minFloor)
+		{
+			minFloor = i[3].toDouble();
+		}
+
+		if (i[3].toDouble() > maxFloor)
+		{
+			maxFloor = i[3].toDouble();
+		}
+	}
+
+	ui.square->setRange(minSquare, maxSquare);
+	ui.rooms->setRange(minRooms,maxRooms);
+	ui.floor->setRange(minFloor,maxFloor);
+}
+
