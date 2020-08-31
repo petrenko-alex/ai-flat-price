@@ -21,7 +21,7 @@
 #define  DIGITS_TO_NEXT_SPLITTER 4
 #define  MAX_VALUE_OF_CRITERION 99999
 
-/* Кодирование номинальных данных - районов ( пример для для файла "Volgograd New Flats.xls" )
+/* Кодирование номинальных данных - районов ( пример для для файла "volgograd_new_flats_2015.xls" )
 
    1. Центральный		1 0 0 0 0 0 0 0
    2. Ворошиловский		0 1 0 0 0 0 0 0
